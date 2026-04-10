@@ -33,6 +33,7 @@ class Prompt:
 
 def main() -> None:
     """Main entry point."""
+    print("heloo")
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
