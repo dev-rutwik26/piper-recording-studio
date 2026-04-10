@@ -39,16 +39,22 @@ def main():
     args = parser.parse_args()
     logging.basicConfig()
 
+    ffmpeg_cmd = "ffmpeg"
     if not shutil.which("ffmpeg"):
-        _LOGGER.fatal("ffmpeg must be installed")
-        return 1
+        local_ffmpeg = _DIR.parent / "ffmpeg"
+        if local_ffmpeg.exists():
+            ffmpeg_cmd = str(local_ffmpeg.resolve())
+            _LOGGER.info("Using local ffmpeg: %s", ffmpeg_cmd)
+        else:
+            _LOGGER.fatal("ffmpeg must be installed")
+            return 1
 
     input_dir = Path(args.input_dir)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     wav_dir = output_dir / "wav"
 
-    export_audio = ExportAudio()
+    export_audio = ExportAudio(ffmpeg_cmd)
     with open(
         output_dir / "metadata.csv", "w", encoding="utf-8"
     ) as metadata_file, ThreadPoolExecutor() as executor:
@@ -67,8 +73,9 @@ def main():
 
 
 class ExportAudio:
-    def __init__(self):
+    def __init__(self, ffmpeg_cmd: str):
         self.thread_data = threading.local()
+        self.ffmpeg_cmd = ffmpeg_cmd
 
     def __call__(
         self,
@@ -106,7 +113,7 @@ class ExportAudio:
                     vad_sample_rate = 16000
                     audio_16khz_bytes = subprocess.check_output(
                         [
-                            "ffmpeg",
+                            self.ffmpeg_cmd,
                             "-i",
                             str(audio_path),
                             "-f",
@@ -140,7 +147,7 @@ class ExportAudio:
 
                 # Write as WAV
                 command = [
-                    "ffmpeg",
+                    self.ffmpeg_cmd,
                     "-y",
                     "-i",
                     str(audio_path),
