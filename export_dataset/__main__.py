@@ -6,15 +6,23 @@ import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
+import zipfile
 import numpy as np
-
+import os
 from .trim import trim_silence
 from .vad import SileroVoiceActivityDetector
-
+import boto3
 _DIR = Path(__file__).parent
 _LOGGER = logging.getLogger(__name__)
+def zip_directory(folder_path, zip_file):
+    for folder_name, subfolders, filenames in os.walk(folder_path):
+        for filename in filenames:
+            # Create complete filepath of file in directory
+            file_path = os.path.join(folder_name, filename)
+            # Add file to zip
+            zip_file.write(file_path)
 
+    
 
 def main():
     """Main entry point."""
@@ -70,7 +78,20 @@ def main():
                 writer_lock,
                 args,
             )
-
+    zip_dir = f"dataset {os.getlogin()} "
+    print(f"Create a new zip file at {zip_dir}")
+    zip_file = zipfile.ZipFile(zip_dir, 'w')
+    # Zip the directory
+    zip_directory(output_dir, zip_file)
+    # Close the zip file
+    zip_file.close()
+    # s3 = boto3.client(
+    #     's3' 
+    #     aws_access_key_id='your_access_key',
+    #     aws_secret_access_key='your_secret_key',
+    #     region_name='ap-south-1'
+    # )
+    # s3.upload_file(zip_dir, 'ai-labs-5497-ml-bucket', zip_dir)
 
 class ExportAudio:
     def __init__(self, ffmpeg_cmd: str):
